@@ -8,6 +8,24 @@ public class PlayerController : MonoBehaviour
     public NavMeshAgent player;
     public float inputDelay = 0.5f;
     private float lastInput = 0;
+    
+    private float normalize(float value)
+    {
+        return value / Mathf.Abs(value);
+    }
+    
+    private bool wallInWay(Vector3 direction)
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, direction, out hit, 5))
+        {
+            if (hit.collider.tag == "Wall")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     void Update()
     {
@@ -16,29 +34,38 @@ public class PlayerController : MonoBehaviour
             return;
         }
         
-        // Move player forward
-        if (Input.GetAxis("Vertical") > 0)
+        // Move player forward or backward
+        if (Input.GetAxis("Vertical") != 0)
         {
-            // Check if a wall is in front of the player before moving
-            RaycastHit hit;
-            if (Physics.Raycast(transform.position, transform.forward, out hit, 5))
+            float normalized = normalize(Input.GetAxis("Vertical"));
+
+            // Check if a wall is the way of the player before moving
+            if (wallInWay(transform.forward * normalized))
             {
-                if (hit.collider.tag == "Wall")
-                {
-                    return;
-                }
+                return;
             }
 
+            if (normalized < 0)
+            {
+                transform.Rotate(0, 180, 0);
+            }
             transform.position += transform.forward * 5;
+
             lastInput = Time.timeSinceLevelLoad;
         }
         
-        // Turn player left or right
+        // Move player left or right
         if (Input.GetAxis("Horizontal") != 0)
         {
-            float normalized = Input.GetAxis("Horizontal") / Mathf.Abs(Input.GetAxis("Horizontal"));
+            float normalized = normalize(Input.GetAxis("Horizontal"));
 
+            if (wallInWay(transform.right * normalized))
+            {
+                return;
+            }
             transform.Rotate(0, 90 * normalized, 0);
+            transform.position += transform.forward * 5;
+            
             lastInput = Time.timeSinceLevelLoad;
         }
         
